@@ -54,4 +54,3 @@ If you prefer to run the application manually:
 ## 👨‍💻 Developed By
 
 - [Mahendra Mali](https://github.com/mahendraplus)
-```
