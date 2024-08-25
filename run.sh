@@ -9,9 +9,20 @@ GO_FILE="iplogger.go"
 echo "Checking for Go installation..."
 if ! command -v go &> /dev/null; then
     echo "Go not found. Installing Go..."
-    wget https://golang.org/dl/go1.20.5.linux-amd64.tar.gz -O go1.20.5.linux-amd64.tar.gz
-    sudo tar -C /usr/local -xzf go1.20.5.linux-amd64.tar.gz
-    export PATH=$PATH:/usr/local/go/bin
+    if ! pkg install go; then
+    echo "pkg install failed. Trying apt..."
+
+    # Try installing Go with apt
+    if ! apt install -y golang; then
+        echo "apt install failed. Trying sudo apt..."
+
+        # Try installing Go with sudo apt
+        if ! sudo apt install -y golang; then
+            echo "Failed to install Go using pkg and apt. Please install Go manually."
+            exit 1
+        fi
+    fi
+fi
     echo "Go installed successfully."
 else
     echo "Go is already installed."
