@@ -4,25 +4,26 @@
 REPO_URL="https://github.com/mahendraplus/Iplogger.git"
 REPO_DIR="Iplogger/"
 GO_FILE="iplogger.go"
+MODULE_PATH="github.com/mahendraplus/Iplogger"
 
 # Update and install Go if not installed
 echo "Checking for Go installation..."
 if ! command -v go &> /dev/null; then
     echo "Go not found. Installing Go..."
     if ! pkg install go; then
-    echo "pkg install failed. Trying apt..."
+        echo "pkg install failed. Trying apt..."
 
-    # Try installing Go with apt
-    if ! apt install -y golang; then
-        echo "apt install failed. Trying sudo apt..."
+        # Try installing Go with apt
+        if ! apt install -y golang; then
+            echo "apt install failed. Trying sudo apt..."
 
-        # Try installing Go with sudo apt
-        if ! sudo apt install -y golang; then
-            echo "Failed to install Go using pkg and apt. Please install Go manually."
-            exit 1
+            # Try installing Go with sudo apt
+            if ! sudo apt install -y golang; then
+                echo "Failed to install Go using pkg and apt. Please install Go manually."
+                exit 1
+            fi
         fi
     fi
-fi
     echo "Go installed successfully."
 else
     echo "Go is already installed."
@@ -32,9 +33,16 @@ fi
 echo "Cloning repository..."
 if [ -d "$REPO_DIR" ]; then
     echo "Repository already exists."
+    cd $REPO_DIR || exit
 else
     git clone $REPO_URL
     cd $REPO_DIR || exit
+fi
+
+# Initialize Go module if not present
+if [ ! -f "go.mod" ]; then
+    echo "Initializing Go module..."
+    go mod init $MODULE_PATH
 fi
 
 # Install Go dependencies
