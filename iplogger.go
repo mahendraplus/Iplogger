@@ -30,7 +30,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	timestamp := time.Now().In(time.FixedZone("Asia/Kolkata", 5*60*60+30*60)).Format("2006-01-02 15:04:05")
 	logEntry := fmt.Sprintf("[%s] %s - %s - %s - %s", timestamp, r.RemoteAddr, r.Header.Get("User-Agent"), r.Method, r.URL)
 	saveLog(logEntry)
-	fmt.Fprintf(w, "Logged request from %s", r.RemoteAddr)
+	fmt.Fprintf(w, "Hello, %s", r.RemoteAddr)
 }
 
 func startServer() {
@@ -53,6 +53,12 @@ func highlightDateTime(logEntry string) string {
 }
 
 func displayLog() {
+	// Ensure the log file exists before adding it to the watcher
+	if _, err := os.Create(logFile); err != nil {
+		fmt.Println("Error creating log file:", err)
+		return
+	}
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		fmt.Println("Error creating file watcher:", err)
@@ -65,6 +71,8 @@ func displayLog() {
 		fmt.Println("Error adding file to watcher:", err)
 		return
 	}
+
+	fmt.Println("Watching for changes in", logFile)
 
 	for {
 		select {
