@@ -48,7 +48,7 @@ func promptLiveLog() {
 	response = strings.TrimSpace(response) // Properly trim newline and spaces
 
 	if response == "y" || response == "Y" {
-		cmd := exec.Command("tail", "-f", logFile)
+		cmd := exec.Command("tail", "-f", "$HOME/Iplogger/log.txt")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
