@@ -1,29 +1,18 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"net/http"
 	"os"
 	"time"
-	"strings"
-	"github.com/fsnotify/fsnotify"
 )
 
 const logFile = "log.txt"
 
 func saveLog(logEntry string) {
-	// Open the log file in append mode
-	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println("Error opening log file:", err)
-		return
-	}
+	file, _ := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer file.Close()
-	_, err = file.WriteString(logEntry + "\n")
-	if err != nil {
-		fmt.Println("Error writing to log file:", err)
-	}
+	file.WriteString(logEntry + "\n")
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -33,82 +22,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello, %s", r.RemoteAddr)
 }
 
-func startServer() {
+func main() {
 	http.HandleFunc("/", handler)
 	fmt.Println("Server started at http://localhost:8022")
-	if err := http.ListenAndServe(":8022", nil); err != nil {
-		fmt.Println("Error starting server:", err)
-	}
-}
-
-func highlightDateTime(logEntry string) string {
-	parts := strings.SplitN(logEntry, "] ", 2)
-	if len(parts) < 2 {
-		return logEntry
-	}
-	dateTime := parts[0] + "]"
-	restOfLog := parts[1]
-	highlightedDateTime := fmt.Sprintf("\033[1;37;41m%s\033[0m", dateTime)
-	return fmt.Sprintf("%s %s", highlightedDateTime, restOfLog)
-}
-
-func displayLog() {
-	// Ensure the log file exists before adding it to the watcher
-	if _, err := os.Create(logFile); err != nil {
-		fmt.Println("Error creating log file:", err)
-		return
-	}
-
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		fmt.Println("Error creating file watcher:", err)
-		return
-	}
-	defer watcher.Close()
-
-	err = watcher.Add(logFile)
-	if err != nil {
-		fmt.Println("Error adding file to watcher:", err)
-		return
-	}
-
-	fmt.Println("Watching for changes in", logFile)
-
-	for {
-		select {
-		case event, ok := <-watcher.Events:
-			if !ok {
-				return
-			}
-			if event.Op&fsnotify.Write == fsnotify.Write {
-				// Clear the console
-				fmt.Print("\033[H\033[2J")
-
-				// Open the log file for reading
-				file, err := os.Open(logFile)
-				if err != nil {
-					fmt.Println("Error opening log file:", err)
-					return
-				}
-
-				// Read and display the log file with highlights
-				scanner := bufio.NewScanner(file)
-				for scanner.Scan() {
-					line := scanner.Text()
-					fmt.Println(highlightDateTime(line))
-				}
-				if err := scanner.Err(); err != nil {
-					fmt.Println("Error reading log file:", err)
-				}
-				file.Close()
-			}
-		case err := <-watcher.Errors:
-			fmt.Println("Error watching file:", err)
-		}
-	}
-}
-
-func main() {
-	go startServer()
-	displayLog()
+	fmt.Println("To view logs in real-time, run: tail -f log.txt")
+	http.ListenAndServe(":8022", nil)
 }
