@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -44,7 +45,7 @@ func promptLiveLog() {
 	fmt.Print("Do you want to see the live log? (y/n): ")
 	reader := bufio.NewReader(os.Stdin)
 	response, _ := reader.ReadString('\n')
-	response = response[:len(response)-1] // Remove newline
+	response = strings.TrimSpace(response) // Properly trim newline and spaces
 
 	if response == "y" || response == "Y" {
 		cmd := exec.Command("tail", "-f", logFile)
