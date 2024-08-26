@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
-	"strings"
 	"time"
+	"io"
 )
 
 const logFile = "log.txt"
@@ -15,11 +14,10 @@ const logFile = "log.txt"
 func saveLog(logEntry string) {
 	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Error opening or creating log file:", err)
+		fmt.Println("Error opening log file:", err)
 		return
 	}
 	defer file.Close()
-
 	_, err = file.WriteString(logEntry + "\n")
 	if err != nil {
 		fmt.Println("Error writing to log file:", err)
@@ -33,39 +31,68 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello, %s", r.RemoteAddr)
 }
 
-func showLogo() {
-	fmt.Println(`
-+-------------------------+
-|         IP-LOGGER       |
-| Created by mahendraplus |
-+-------------------------+`)
+func tailLogFile() {
+	file, err := os.Open(logFile)
+	if err != nil {
+		fmt.Println("Error opening log file:", err)
+		return
+	}
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	for {
+		_, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			fmt.Println("Error reading log file:", err)
+			return
+		}
+		displayLast10Logs()
+	}
 }
 
-func promptLiveLog() {
-	fmt.Print("Do you want to see the live log? (y/n): ")
-	reader := bufio.NewReader(os.Stdin)
-	response, _ := reader.ReadString('\n')
-	response = strings.TrimSpace(response) // Properly trim newline and spaces
+func displayLast10Logs() {
+	file, err := os.Open(logFile)
+	if err != nil {
+		fmt.Println("Error opening log file:", err)
+		return
+	}
+	defer file.Close()
 
-	if response == "y" || response == "Y" {
-		cmd := exec.Command("tail", "-f", "$HOME/Iplogger/log.txt")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err := cmd.Run()
-		if err != nil {
-			fmt.Println("Error running tail command:", err)
-		}
-	} else {
-		fmt.Println("Live log viewing skipped. Server is running...")
+	scanner := bufio.NewScanner(file)
+	var logs []string
+	for scanner.Scan() {
+		logs = append(logs, scanner.Text())
+	}
+
+	if len(logs) > 10 {
+		logs = logs[len(logs)-10:] // Get the last 10 logs
+	}
+
+	// Clear the console
+	fmt.Print("\033[H\033[2J")
+	fmt.Println("Last 10 Requests (Live):")
+	for _, log := range logs {
+		fmt.Println(log)
+	}
+}
+
+func startServer() {
+	http.HandleFunc("/", handler)
+	fmt.Println("+-------------------------+")
+	fmt.Println("|         IP-LOGGER       |")
+	fmt.Println("| Created by mahendraplus |")
+	fmt.Println("+-------------------------+")
+	go tailLogFile()
+	fmt.Println("Server started at http://localhost:8022")
+	if err := http.ListenAndServe(":8022", nil); err != nil {
+		fmt.Println("Error starting server:", err)
 	}
 }
 
 func main() {
-	showLogo()
-	http.HandleFunc("/", handler)
-	fmt.Println("Server started at http://localhost:8022")
-	go promptLiveLog() // Ask user if they want to see live log
-	if err := http.ListenAndServe(":8022", nil); err != nil {
-		fmt.Println("Error starting server:", err)
-	}
+	startServer()
 }
